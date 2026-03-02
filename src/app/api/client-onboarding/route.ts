@@ -22,7 +22,14 @@ export async function POST(request: Request) {
             specificStartDate: body.specificStartDate ? new Date(body.specificStartDate) : null,
         });
 
-        await repo.save(submission);
+        const saved = await repo.save(submission);
+
+        // Trigger n8n webhook after successful save
+        fetch("https://n8n.launchpadautomation.com/webhook/onboarding-form-completed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(saved),
+        }).catch((err) => console.error("Webhook trigger failed:", err));
 
         return NextResponse.json({ success: true });
     } catch (error) {
