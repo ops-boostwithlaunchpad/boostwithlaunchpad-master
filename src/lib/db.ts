@@ -309,6 +309,25 @@ export const ClientOnboarding = new EntitySchema<IClientOnboarding>({
   },
 });
 
+// --- External Tables (shared DB) ---
+
+export interface IClient {
+  id: number;
+  client_email: string;
+  agreement_signed: boolean;
+}
+
+export const Client = new EntitySchema<IClient>({
+  name: "Client",
+  tableName: "clients",
+  synchronize: false,
+  columns: {
+    id: { type: "int", primary: true, generated: "increment" },
+    client_email: { type: "varchar" },
+    agreement_signed: { type: "boolean", default: false },
+  },
+});
+
 export interface INewsletterSubscriber {
   id: number;
   email: string;
@@ -360,7 +379,7 @@ export async function getDataSource(): Promise<DataSource> {
     username: conn.username,
     password: conn.password,
     database: conn.database,
-    entities: [ContactSubmission, BusinessProfile, NewsletterSubscriber, ClientOnboarding],
+    entities: [ContactSubmission, BusinessProfile, NewsletterSubscriber, ClientOnboarding, Client],
     synchronize: true,
     ssl: { rejectUnauthorized: false },
   });

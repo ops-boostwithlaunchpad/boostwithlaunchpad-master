@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDataSource, ClientOnboarding } from "@/lib/db";
+import { getDataSource, ClientOnboarding, Client } from "@/lib/db";
 
 export async function POST(request: Request) {
     try {
@@ -31,7 +31,17 @@ export async function POST(request: Request) {
             body: JSON.stringify(saved),
         }).catch((err) => console.error("Webhook trigger failed:", err));
 
-        return NextResponse.json({ success: true });
+        // Check if client has signed agreement (in "clients" table)
+        const clientEmail = body.contactEmail;
+        const clientsRepo = db.getRepository(Client);
+        const signedClient = await clientsRepo.findOne({
+            where: { client_email: clientEmail, agreement_signed: true },
+        });
+
+        return NextResponse.json({
+            success: true,
+            agreementSigned: !!signedClient,
+        });
     } catch (error) {
         console.error("Onboarding submission error:", error);
         return NextResponse.json(

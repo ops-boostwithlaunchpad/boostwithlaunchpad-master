@@ -22,6 +22,7 @@ export default function ClientOnboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [agreementNotSigned, setAgreementNotSigned] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [confirmChecked, setConfirmChecked] = useState(false);
 
@@ -97,11 +98,52 @@ export default function ClientOnboarding() {
         autoDataStorage: formData.autoDataStorage.join(", "), autoRolesToReplace: formData.autoRolesToReplace.join(", "),
       };
       const res = await fetch("/api/client-onboarding", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) { setIsSuccess(true); window.scrollTo(0, 0); }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.agreementSigned === false) {
+          setAgreementNotSigned(true);
+        } else {
+          setIsSuccess(true);
+        }
+        window.scrollTo(0, 0);
+      }
       else alert("Submission failed.");
     } catch (err) { alert("Error occurred."); }
     finally { setIsSubmitting(false); }
   };
+
+  if (agreementNotSigned) return (
+    <div className="min-h-screen bg-[#f9f9f7] py-20 px-6 text-center font-sans">
+      <div className="max-w-[600px] mx-auto">
+        <div className="w-16 h-16 bg-[#fef3c7] border border-[#f59e0b] rounded-full flex items-center justify-center mx-auto mb-8">
+          <svg className="w-8 h-8 stroke-[#92400e] stroke-[3] fill-none" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </div>
+        <h1 className="font-serif text-4xl mb-6 font-medium tracking-tight">Agreement Not Signed Yet</h1>
+        <div className="bg-[#fffbeb] border border-[#f59e0b] rounded-xl p-6 mb-8 text-left">
+          <p className="text-[#92400e] text-base leading-relaxed">
+            Your onboarding information has been saved, but you have not signed your agreement yet.
+          </p>
+          <p className="text-[#92400e] text-base leading-relaxed mt-3">
+            Please sign the document from the email sent by <strong>DocuSign</strong> after payment. Once signed, your account will be activated and services will begin.
+          </p>
+        </div>
+        <div className="space-y-4 text-left mb-12">
+          {[
+            "Check your email for the DocuSign agreement.",
+            "Complete the payment if you haven\u2019t already.",
+            "Sign the document to activate your services.",
+            "Once signed, our team will begin your onboarding."
+          ].map((t, i) => (
+            <div key={i} className="flex gap-4 p-5 bg-white border border-[#ededea] rounded-xl items-center shadow-sm">
+              <div className="w-6 h-6 bg-[#f59e0b] text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</div>
+              <span className="text-sm font-medium text-gray-700">{t}</span>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => router.push("/")} className="px-10 py-4 bg-[#1a1a17] text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg shadow-black/5 uppercase tracking-widest text-xs">Return Home</button>
+      </div>
+    </div>
+  );
 
   if (isSuccess) return (
     <div className="min-h-screen bg-[#f9f9f7] py-20 px-6 text-center font-sans">
@@ -109,14 +151,14 @@ export default function ClientOnboarding() {
         <div className="w-16 h-16 bg-[#eef4e8] border border-[#b8d49a] rounded-full flex items-center justify-center mx-auto mb-8">
           <svg className="w-8 h-8 stroke-[#2a4f0e] stroke-[3] fill-none" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
         </div>
-        <h1 className="font-serif text-5xl mb-6 font-medium tracking-tight">You&apos;re in.</h1>
-        <p className="text-gray-600 mb-10 text-lg leading-relaxed">Your onboarding is complete. Our team has everything they need. Here&apos;s what happens next:</p>
+        <h1 className="font-serif text-5xl mb-6 font-medium tracking-tight">You&apos;re all set.</h1>
+        <p className="text-gray-600 mb-10 text-lg leading-relaxed">Your onboarding is complete and your agreement is signed. You will receive an email with portal access shortly. Here&apos;s what happens next:</p>
         <div className="space-y-4 text-left mb-12">
           {[
+            "You\u2019ll receive portal access via email.",
             "Kickoff call scheduled within 1 business day.",
             "Google & Meta access requests arriving within 24 hours.",
-            "Full campaign audit ready for our first strategy session.",
-            "Automated weekly reports start next Monday."
+            "Full campaign audit ready for our first strategy session."
           ].map((t, i) => (
             <div key={i} className="flex gap-4 p-5 bg-white border border-[#ededea] rounded-xl items-center shadow-sm">
               <div className="w-6 h-6 bg-[#2a4f0e] text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</div>
