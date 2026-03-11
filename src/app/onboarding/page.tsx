@@ -25,6 +25,7 @@ export default function ClientOnboarding() {
   const [agreementNotSigned, setAgreementNotSigned] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [confirmChecked, setConfirmChecked] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState<any>({
     companyName: "", websiteUrl: "", industry: "", businessType: "", primaryCity: "", state: "", serviceRadius: "", extraMarkets: "",
@@ -83,9 +84,64 @@ export default function ClientOnboarding() {
     }
   };
 
+  const validateStep = (step: number): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    const f = formData;
+    switch (step) {
+      case 1:
+        if (selectedServices.length === 0) errors.services = "Select at least one service";
+        break;
+      case 2:
+        if (!f.companyName.trim()) errors.companyName = "Company Name is required";
+        if (!f.websiteUrl.trim()) errors.websiteUrl = "Website URL is required";
+        if (!f.industry) errors.industry = "Industry is required";
+        if (!f.primaryCity.trim()) errors.primaryCity = "City is required";
+        if (!f.state.trim()) errors.state = "State is required";
+        if (!f.contactName.trim()) errors.contactName = "Contact Name is required";
+        if (!f.contactEmail.trim()) errors.contactEmail = "Contact Email is required";
+        if (!f.contactPhone.trim()) errors.contactPhone = "Contact Phone is required";
+        break;
+      case 3:
+        if (!f.primaryGoal) errors.primaryGoal = "Select a primary objective";
+        break;
+      case 4:
+        if (!f.cms) errors.cms = "Website Platform is required";
+        break;
+      case 5:
+        if (!f.comp1.trim()) errors.comp1 = "Primary Competitor is required";
+        break;
+      case 6:
+        if (!f.hasGoogleAccount) errors.hasGoogleAccount = "Select an option";
+        if (f.hasGoogleAccount === "yes" && !f.googleEmail.trim()) errors.googleEmail = "Google Email is required";
+        break;
+      case 7:
+        if (!f.adSpendBudget) errors.adSpendBudget = "Monthly Ad Budget is required";
+        if (!confirmChecked) errors.confirmChecked = "You must confirm the brief is accurate";
+        break;
+    }
+    return errors;
+  };
+
+  const handleNext = () => {
+    const errors = validateStep(currentStep);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setFieldErrors({});
+    setCurrentStep(currentStep + 1);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!confirmChecked) return;
+    const errors = validateStep(7);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setFieldErrors({});
     setIsSubmitting(true);
     try {
       const payload = {
@@ -205,6 +261,7 @@ export default function ClientOnboarding() {
               <div className="text-[10px] font-extrabold tracking-[0.2em] uppercase text-[#2a4f0e] mb-3">Foundation</div>
               <h2 className="font-serif text-4xl mb-3 font-medium tracking-tight">Select Your Services</h2>
               <p className="text-gray-500 text-sm mb-10 leading-relaxed max-w-lg">Choose the pillars of your growth campaign. We will tailor the following steps based on your selection.</p>
+              {fieldErrors.services && <p className="text-red-500 text-xs font-semibold mb-4">{fieldErrors.services}</p>}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
                   { id: "local_seo", name: "Local SEO", desc: "Maps, GBP, citations & reviews" },
@@ -238,11 +295,11 @@ export default function ClientOnboarding() {
               <p className="text-gray-500 text-sm leading-relaxed max-w-lg">Used to coordinate your identity across all search networks.</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Input label="Company Name" name="companyName" value={formData.companyName} onChange={handleChange} required />
-                <Input label="Website URL" name="websiteUrl" value={formData.websiteUrl} onChange={handleChange} placeholder="https://..." required />
+                <Input label="Company Name" name="companyName" value={formData.companyName} onChange={handleChange} required error={fieldErrors.companyName} />
+                <Input label="Website URL" name="websiteUrl" value={formData.websiteUrl} onChange={handleChange} placeholder="https://..." required error={fieldErrors.websiteUrl} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Select label="Industry" name="industry" value={formData.industry} onChange={handleChange} required>
+                <Select label="Industry" name="industry" value={formData.industry} onChange={handleChange} required error={fieldErrors.industry}>
                   <option value="">Select...</option>
                   {Object.keys(spendData).map(k => <option key={k} value={k}>{spendData[k].name}</option>)}
                 </Select>
@@ -252,15 +309,19 @@ export default function ClientOnboarding() {
                 </Select>
               </div>
               <div className="grid grid-cols-3 gap-6">
-                <Input label="City" name="primaryCity" value={formData.primaryCity} onChange={handleChange} required />
-                <Input label="State" name="state" value={formData.state} onChange={handleChange} required />
+                <Input label="City" name="primaryCity" value={formData.primaryCity} onChange={handleChange} required error={fieldErrors.primaryCity} />
+                <Input label="State" name="state" value={formData.state} onChange={handleChange} required error={fieldErrors.state} />
                 <Input label="Radius" name="serviceRadius" value={formData.serviceRadius} onChange={handleChange} placeholder="30 mi" />
               </div>
               <div className="pt-6 border-t border-[#e5e4df]">
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Contact & Communications</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <Input label="Primary Name" name="contactName" value={formData.contactName} onChange={handleChange} required />
-                  <Input label="Email" name="contactEmail" value={formData.contactEmail} onChange={handleChange} type="email" required />
+                  <Input label="Primary Name" name="contactName" value={formData.contactName} onChange={handleChange} required error={fieldErrors.contactName} />
+                  <Input label="Email" name="contactEmail" value={formData.contactEmail} onChange={handleChange} type="email" required error={fieldErrors.contactEmail} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+                  <Input label="Phone" name="contactPhone" value={formData.contactPhone} onChange={handleChange} type="tel" required error={fieldErrors.contactPhone} />
+                  <Input label="Role / Title" name="contactRole" value={formData.contactRole} onChange={handleChange} />
                 </div>
               </div>
             </div>
@@ -273,7 +334,8 @@ export default function ClientOnboarding() {
               <p className="text-gray-500 text-sm leading-relaxed">What does a &ldquo;win&rdquo; look like for you this year?</p>
 
               <div className="space-y-3">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Primary Objective</label>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Primary Objective <span className="text-red-500">*</span></label>
+                {fieldErrors.primaryGoal && <p className="text-red-500 text-xs font-semibold -mt-1">{fieldErrors.primaryGoal}</p>}
                 {[
                   { id: "rank_keywords", t: "Rank for specific keywords", d: "First page dominance for core services" },
                   { id: "local_leads", t: "Generate more local phone calls", d: "Focus on bottom-of-funnel conversions" },
@@ -309,7 +371,7 @@ export default function ClientOnboarding() {
 
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
-                  <Select label="Website Platform" name="cms" value={formData.cms} onChange={handleChange} required>
+                  <Select label="Website Platform" name="cms" value={formData.cms} onChange={handleChange} required error={fieldErrors.cms}>
                     <option value="">Select...</option><option>WordPress</option><option>Webflow</option><option>Custom</option>
                   </Select>
                   <Select label="Domain Age" name="domainAge" value={formData.domainAge} onChange={handleChange}>
@@ -364,7 +426,7 @@ export default function ClientOnboarding() {
               <div className="text-[10px] font-extrabold tracking-[0.2em] uppercase text-[#2a4f0e]">Step 5</div>
               <h2 className="font-serif text-4xl font-medium tracking-tight">The Competition</h2>
               <div className="space-y-6">
-                <Input label="Primary Competitor" name="comp1" value={formData.comp1} onChange={handleChange} placeholder="Their website URL" required />
+                <Input label="Primary Competitor" name="comp1" value={formData.comp1} onChange={handleChange} placeholder="Their website URL" required error={fieldErrors.comp1} />
                 <Input label="Second Competitor" name="comp2" value={formData.comp2} onChange={handleChange} />
                 <div className="pt-6">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Your Competitive Edge</label>
@@ -380,10 +442,11 @@ export default function ClientOnboarding() {
               <h2 className="font-serif text-4xl font-medium tracking-tight">Asset Access</h2>
               <div className="space-y-8">
                 <div className="space-y-4">
-                  <label className="text-sm font-bold">Do you have a managed Google Account for your business?</label>
+                  <label className="text-sm font-bold">Do you have a managed Google Account for your business? <span className="text-red-500">*</span></label>
+                  {fieldErrors.hasGoogleAccount && <p className="text-red-500 text-xs font-semibold -mt-2">{fieldErrors.hasGoogleAccount}</p>}
                   <div className="grid grid-cols-2 gap-4">
                     {['yes', 'no'].map(v => (
-                      <label key={v} className={`p-5 border-2 rounded-2xl text-center cursor-pointer transition-all ${formData.hasGoogleAccount === v ? 'border-[#2a4f0e] bg-[#eef4e8] font-bold' : 'border-[#e5e4df]'}`}>
+                      <label key={v} className={`p-5 border-2 rounded-2xl text-center cursor-pointer transition-all ${formData.hasGoogleAccount === v ? 'border-[#2a4f0e] bg-[#eef4e8] font-bold' : fieldErrors.hasGoogleAccount ? 'border-red-300 bg-red-50/30' : 'border-[#e5e4df]'}`}>
                         <input type="radio" name="hasGoogleAccount" value={v} checked={formData.hasGoogleAccount === v} onChange={handleChange} className="hidden" required />
                         {v === 'yes' ? 'Yes, I have it' : 'No, set it up'}
                       </label>
@@ -391,7 +454,7 @@ export default function ClientOnboarding() {
                   </div>
                 </div>
                 {formData.hasGoogleAccount === 'yes' && (
-                  <Input label="Main Google Email" name="googleEmail" value={formData.googleEmail} onChange={handleChange} type="email" placeholder="account@gmail.com" required />
+                  <Input label="Main Google Email" name="googleEmail" value={formData.googleEmail} onChange={handleChange} type="email" placeholder="account@gmail.com" required error={fieldErrors.googleEmail} />
                 )}
                 <Input label="CRM System" name="crmSystem" value={formData.crmSystem} onChange={handleChange} placeholder="HubSpot, Salesforce, etc." />
               </div>
@@ -412,7 +475,7 @@ export default function ClientOnboarding() {
               )}
 
               <div className="space-y-8">
-                <Select label="Monthly Ad Budget" name="adSpendBudget" value={formData.adSpendBudget} onChange={handleChange} required>
+                <Select label="Monthly Ad Budget" name="adSpendBudget" value={formData.adSpendBudget} onChange={handleChange} required error={fieldErrors.adSpendBudget}>
                   <option value="">Select...</option>
                   <option>Under $1,000</option><option>$1,000 - $2,500</option><option>$2,500 - $5,000</option>
                   <option>$5,000 - $10,000</option><option>$10k - $25k</option><option>$25k+</option>
@@ -447,12 +510,13 @@ export default function ClientOnboarding() {
 
                 <div className="pt-10 border-t-2 border-[#e5e4df]">
                   <label className={`flex items-start gap-5 p-7 border-2 rounded-2xl cursor-pointer transition-all duration-500 group
-                                ${confirmChecked ? 'border-[#2a4f0e] bg-[#eef4e8] shadow-lg shadow-[#2a4f0e]/5' : 'border-[#e0c97a] bg-[#faf4e0]'}`}>
+                                ${confirmChecked ? 'border-[#2a4f0e] bg-[#eef4e8] shadow-lg shadow-[#2a4f0e]/5' : fieldErrors.confirmChecked ? 'border-red-300 bg-red-50/30' : 'border-[#e0c97a] bg-[#faf4e0]'}`}>
                     <input type="checkbox" checked={confirmChecked} onChange={(e) => setConfirmChecked(e.target.checked)} className="w-6 h-6 accent-[#2a4f0e] mt-1 shrink-0" required />
-                    <span className={`text-sm font-bold leading-relaxed transition-colors ${confirmChecked ? 'text-[#2a4f0e]' : 'text-[#8a6910]'}`}>
+                    <span className={`text-sm font-bold leading-relaxed transition-colors ${confirmChecked ? 'text-[#2a4f0e]' : fieldErrors.confirmChecked ? 'text-red-500' : 'text-[#8a6910]'}`}>
                       I confirm that this strategic brief is accurate. I am ready for the Launchpad team to begin work in my account immediately upon kickoff.
                     </span>
                   </label>
+                  {fieldErrors.confirmChecked && <p className="text-red-500 text-xs font-semibold mt-2 ml-1">{fieldErrors.confirmChecked}</p>}
                 </div>
               </div>
             </div>
@@ -463,10 +527,10 @@ export default function ClientOnboarding() {
             <div className="text-[10px] font-extrabold text-[#1a1a17]/30 uppercase tracking-[0.2em]">Brief {currentStep} of 7</div>
             <div className="flex gap-4">
               {currentStep > 1 && (
-                <button type="button" onClick={() => setCurrentStep(currentStep - 1)} className="px-8 py-3.5 border-2 border-[#e5e4df] rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white hover:border-black transition-all">Back</button>
+                <button type="button" onClick={() => { setFieldErrors({}); setCurrentStep(currentStep - 1); }} className="px-8 py-3.5 border-2 border-[#e5e4df] rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white hover:border-black transition-all">Back</button>
               )}
               {currentStep < 7 ? (
-                <button type="button" disabled={currentStep === 1 && selectedServices.length === 0} onClick={() => setCurrentStep(currentStep + 1)}
+                <button type="button" onClick={handleNext}
                   className="px-10 py-3.5 bg-[#1a1a17] text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-black transition-all disabled:opacity-20 shadow-lg shadow-black/10">Continue &rarr;</button>
               ) : (
                 <button type="submit" disabled={isSubmitting || !confirmChecked}
@@ -490,25 +554,27 @@ export default function ClientOnboarding() {
   );
 }
 
-function Input({ label, ...props }: any) {
+function Input({ label, error, ...props }: any) {
   return (
     <div className="flex flex-col gap-2.5">
       <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{label} {props.required && <span className="text-red-500">*</span>}</label>
-      <input className="p-4 border-2 border-[#e5e4df] rounded-2xl text-sm focus:border-[#2a4f0e] outline-none shadow-sm shadow-black/[0.02] bg-white" {...props} />
+      <input className={`p-4 border-2 rounded-2xl text-sm outline-none shadow-sm shadow-black/[0.02] bg-white transition-all ${error ? 'border-red-400 focus:border-red-500' : 'border-[#e5e4df] focus:border-[#2a4f0e]'}`} {...props} />
+      {error && <p className="text-red-500 text-xs font-semibold -mt-1 ml-1">{error}</p>}
     </div>
   );
 }
 
-function Select({ label, ...props }: any) {
+function Select({ label, error, children, ...props }: any) {
   return (
     <div className="flex flex-col gap-2.5">
       <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{label} {props.required && <span className="text-red-500">*</span>}</label>
       <div className="relative">
-        <select className="w-full p-4 border-2 border-[#e5e4df] rounded-2xl text-sm focus:border-[#2a4f0e] outline-none appearance-none bg-white shadow-sm shadow-black/[0.02]" {...props} />
+        <select className={`w-full p-4 border-2 rounded-2xl text-sm outline-none appearance-none bg-white shadow-sm shadow-black/[0.02] transition-all ${error ? 'border-red-400 focus:border-red-500' : 'border-[#e5e4df] focus:border-[#2a4f0e]'}`} {...props}>{children}</select>
         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
         </div>
       </div>
+      {error && <p className="text-red-500 text-xs font-semibold -mt-1 ml-1">{error}</p>}
     </div>
   );
 }
